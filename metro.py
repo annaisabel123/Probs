@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 df = pd.read_csv("metro.csv")
 main_data = df["traffic_volume"].describe()
 daily_df = (
-    df.groupby(pd.to_datetime(df["date_time"]).dt.date)
+    df.drop_duplicates(subset=["date_time"])
+    .groupby(pd.to_datetime(df["date_time"]).dt.date)
     .agg(
         traffic_volume=("traffic_volume", "sum"),
         weather_main=("weather_main", lambda x: x.mode()[0]),
@@ -14,10 +15,20 @@ daily_df = (
     .reset_index()
 )
 
-print(daily_df.head(20))
+
 # figures
-f1 = daily_df["weather_main"].value_counts().plot(kind = "pie", title = "distribution of traffic according to weather")
-f1.figure.savefig('weathervstraffic.pdf')
+
+f1 = (
+    daily_df.groupby("weather_main")["traffic_volume"]
+    .mean()
+    .sort_values()
+    .plot(kind="bar", title="Distribution of Traffic According to Weather")
+)
+
+plt.xlabel("Weather Condition")
+plt.ylabel("Average Daily Traffic Volume")
+
+f1.figure.savefig("weathervstraffic.pdf", bbox_inches="tight")
 plt.close()
 
 holiday_groups =(
